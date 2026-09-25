@@ -6,6 +6,13 @@ It runs locally on your computer, shows your stake in a simple window, and signs
 
 Works on **Windows** and **macOS** (Linux too, from source).
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
+    <img src="docs/screenshot-light.png" alt="SHDW Unstake app window" width="720">
+  </picture>
+</p>
+
 ---
 
 ## Download
@@ -33,6 +40,9 @@ No installation needed — these are single files with everything inside. They a
    - **macOS:** unzip the file and double-click `shdw-unstake`. If macOS blocks it, open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** (the app is not notarized by Apple).
 2. **Check:** the app opens in your browser. Paste your wallet address and press **Check**.
 3. **Step 1 — Unstake:** press **Unstake**. The app simulates the transaction first; if it passes, paste your private key and press **Sign and send**.
+
+   <img src="docs/screenshot-sign.png" alt="Signing step: simulation passed, paste your key" width="560">
+
 4. **Step 2 — Withdraw:** after the cooldown (one Solana epoch, about 2–3 days), start the app again and press **Withdraw**. Your SHDW returns to your wallet.
 
 Keep the black console window open while you use the app; close it to stop.
