@@ -1,0 +1,116 @@
+# Builds single-file executables (Node.js SEA) for Windows and macOS.
+#
+# - Run manually: Actions tab -> "Build apps" -> "Run workflow". Files appear under "Artifacts" of the run.
+# - Publish a release on GitHub: the files are built and attached to that release automatically.
+
+name: Build apps
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: "24"
+  SEA_FUSE: NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm install --no-audit --no-fund
+      - run: npm run bundle
+      - run: node --experimental-sea-config sea-config.json
+      - name: Create shdw-unstake-windows-x64.exe
+        run: |
+          mkdir -p out
+          node -e "require('fs').copyFileSync(process.execPath, 'out/shdw-unstake-windows-x64.exe')"
+          npx postject out/shdw-unstake-windows-x64.exe NODE_SEA_BLOB dist/sea-prep.blob --sentinel-fuse "$SEA_FUSE"
+      - name: Smoke test (the app must start)
+        run: |
+          ./out/shdw-unstake-windows-x64.exe > smoke.log 2>&1 &
+          sleep 8
+          cat smoke.log
+          grep -q "is running" smoke.log
+          taskkill //F //IM shdw-unstake-windows-x64.exe || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: out/*
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm install --no-audit --no-fund
+      - run: npm run bundle
+      - run: node --experimental-sea-config sea-config.json
+      - name: Build Apple Silicon (arm64) and Intel (x64) binaries
+        run: |
+          set -e
+          NODE_VER=$(node -v)
+          mkdir -p out build/arm64 build/x64
+
+          # arm64: the runner's own Node.js
+          node -e "require('fs').copyFileSync(process.execPath, 'build/arm64/shdw-unstake')"
+
+          # x64: official Node.js for Intel Macs, same version
+          curl -fsSL "https://nodejs.org/dist/${NODE_VER}/node-${NODE_VER}-darwin-x64.tar.gz" | tar -xz -C build
+          cp "build/node-${NODE_VER}-darwin-x64/bin/node" build/x64/shdw-unstake
+
+          for ARCH in arm64 x64; do
+            BIN="build/${ARCH}/shdw-unstake"
+            chmod +w "$BIN"
+            codesign --remove-signature "$BIN"
+            npx postject "$BIN" NODE_SEA_BLOB dist/sea-prep.blob --sentinel-fuse "$SEA_FUSE" --macho-segment-name NODE_SEA
+            codesign --sign - "$BIN"
+            # zip keeps the executable permission; a raw download would lose it
+            (cd "build/${ARCH}" && zip -X "../../out/shdw-unstake-macos-${ARCH}.zip" shdw-unstake)
+          done
+      - name: Smoke test arm64 (the app must start)
+        run: |
+          ./build/arm64/shdw-unstake > smoke.log 2>&1 &
+          sleep 8
+          cat smoke.log
+          grep -q "is running" smoke.log
+          pkill -f build/arm64/shdw-unstake || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: out/*
+
+  publish:
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Checksums
+        run: |
+          cd out
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: all-files
+          path: out/*
+      - name: Attach files to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" out/* --clobber --repo "${{ github.repository }}"
