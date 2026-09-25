@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Local settings (may contain a private RPC API key)
+config.json
+
+# Logs and build output
+*.log
+dist/
+*.exe
+
+# Never commit keys
+*.key
+key.txt
+id.json
+
+# OS files
+.DS_Store
+Thumbs.db

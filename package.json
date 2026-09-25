@@ -1,0 +1,22 @@
+{
+  "name": "shdw-unstake",
+  "version": "1.0.0",
+  "description": "Local GUI to unstake and withdraw SHDW from the shdwDrive v2 operator staking program on Solana",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "author": "solanavibes",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/solanavibes/shdw-unstake.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/server.mjs"
+  },
+  "dependencies": {
+    "@solana/web3.js": ">=1.95.8 <2"
+  }
+}

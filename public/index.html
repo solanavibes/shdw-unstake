@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SHDW Unstake</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --card: #ffffff; --soft: #f1f0ec; --text: #1c1c1a; --muted: #6b6a65; --faint: #9a998f;
+    --border: rgba(0,0,0,.12); --accent: #185fa5; --accent-bg: #e6f1fb; --ok: #3b6d11; --ok-bg: #eaf3de;
+    --warn: #854f0b; --warn-bg: #faeeda; --bad: #a32d2d; --bad-bg: #fcebeb;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1b1b19; --card: #262624; --soft: #2f2f2c; --text: #eceae4; --muted: #a9a79f; --faint: #7d7b74;
+      --border: rgba(255,255,255,.14); --accent: #85b7eb; --accent-bg: #0c447c; --ok: #c0dd97; --ok-bg: #27500a;
+      --warn: #fac775; --warn-bg: #633806; --bad: #f7c1c1; --bad-bg: #791f1f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 900px; margin: 0 auto; padding: 20px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 14px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  .col { display: flex; flex-direction: column; gap: 14px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .label { font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+  .row { display: flex; gap: 8px; }
+  input { flex: 1; min-width: 0; height: 38px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--soft); color: var(--text); font: inherit; font-size: 14px; }
+  input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  button { height: 38px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); font: inherit; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  button:hover { background: var(--soft); }
+  button.primary { background: var(--accent); color: var(--card); border-color: var(--accent); }
+  button:disabled { opacity: .5; cursor: default; }
+  .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .metric { background: var(--soft); border-radius: 8px; padding: 10px 12px; }
+  .metric b { display: block; font-size: 19px; font-weight: 600; }
+  .pill { font-size: 12px; padding: 3px 10px; border-radius: 8px; background: var(--soft); color: var(--muted); }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); } .pill.warn { background: var(--warn-bg); color: var(--warn); }
+  .pill.accent { background: var(--accent-bg); color: var(--accent); } .pill.bad { background: var(--bad-bg); color: var(--bad); }
+  .steps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .hint { font-size: 12px; color: var(--faint); margin: 5px 0 0; }
+  .err { font-size: 13px; color: var(--bad); margin: 6px 0 0; }
+  .msg { font-size: 13px; margin: 0 0 8px; }
+  .mono { font-family: var(--mono); font-size: 12px; word-break: break-all; }
+  #log { max-height: 220px; overflow-y: auto; color: var(--muted); line-height: 1.7; }
+  #log a { color: var(--accent); }
+  .donate { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; align-self: start; }
+  .qr { width: 160px; height: 160px; border-radius: 8px; overflow: hidden; }
+  details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+  .hidden { display: none !important; }
+  footer { text-align: center; font-size: 12px; color: var(--faint); margin-top: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>SHDW Unstake</h1>
+      <p class="sub">Withdraw SHDW from the shdwDrive v2 operator stake</p>
+    </div>
+    <div class="row" style="align-items:center">
+      <span id="net" class="pill">Not connected</span>
+      <button id="quit" title="Stop the app">Quit</button>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <section class="card">
+        <p class="label">Wallet address</p>
+        <div class="row">
+          <input id="wallet" placeholder="Your public Solana address" autocomplete="off" spellcheck="false">
+          <button id="check" class="primary">Check</button>
+        </div>
+        <p id="walletErr" class="err hidden"></p>
+      </section>
+
+      <section class="card">
+        <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+          <strong>Stake status</strong>
+          <span id="status" class="pill">Enter a wallet</span>
+        </div>
+        <div class="metrics">
+          <div class="metric"><span class="label">Staked</span><b id="staked">—</b></div>
+          <div class="metric"><span class="label">In wallet</span><b id="inWallet">—</b></div>
+          <div class="metric"><span class="label">SOL for fees</span><b id="sol">—</b></div>
+        </div>
+        <p id="solWarn" class="err hidden">Not enough SOL for fees. Send about 0.005 SOL to this wallet.</p>
+      </section>
+
+      <section class="card">
+        <div class="steps">
+          <div>
+            <p class="label">Step 1</p>
+            <button id="unstake" style="width:100%">Unstake</button>
+            <p class="hint">Starts the cooldown (about 2–3 days)</p>
+          </div>
+          <div>
+            <p class="label">Step 2 · after cooldown</p>
+            <button id="withdraw" style="width:100%">Withdraw</button>
+            <p id="withdrawHint" class="hint">Sends SHDW back to your wallet</p>
+          </div>
+        </div>
+
+        <div id="signBox" class="hidden" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+          <p id="signMsg" class="msg"></p>
+          <div class="row">
+            <input id="key" type="password" placeholder="Private key of this wallet" autocomplete="off" spellcheck="false">
+            <button id="sign" class="primary">Sign and send</button>
+            <button id="cancel">Cancel</button>
+          </div>
+          <p id="keyErr" class="err hidden"></p>
+          <p class="hint">The key is used only in memory on this computer to sign this one transaction. It is never saved.</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <p class="label">Activity</p>
+        <div id="log" class="mono">Ready.</div>
+      </section>
+
+      <details class="card">
+        <summary>Settings</summary>
+        <p class="label" style="margin-top:12px">RPC URL (a free Helius key works best)</p>
+        <div class="row">
+          <input id="rpc" placeholder="https://mainnet.helius-rpc.com/?api-key=..." autocomplete="off" spellcheck="false">
+          <button id="saveRpc">Save</button>
+        </div>
+        <p id="rpcInfo" class="hint"></p>
+      </details>
+    </div>
+
+    <aside class="card donate">
+      <strong>Support this tool</strong>
+      <div class="qr"><svg width="160" height="160" xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 37 37" shape-rendering="crispEdges" role="img" aria-label="Donation address QR code"><rect x="-2" y="-2" width="37" height="37" fill="#fff"/><path d="M0 0h7v1h-7zM10 0h4v1h-4zM15 0h3v1h-3zM20 0h1v1h-1zM23 0h1v1h-1zM26 0h7v1h-7zM0 1h1v1h-1zM6 1h1v1h-1zM9 1h1v1h-1zM13 1h3v1h-3zM17 1h1v1h-1zM20 1h1v1h-1zM22 1h1v1h-1zM26 1h1v1h-1zM32 1h1v1h-1zM0 2h1v1h-1zM2 2h3v1h-3zM6 2h1v1h-1zM8 2h2v1h-2zM13 2h1v1h-1zM16 2h3v1h-3zM20 2h1v1h-1zM26 2h1v1h-1zM28 2h3v1h-3zM32 2h1v1h-1zM0 3h1v1h-1zM2 3h3v1h-3zM6 3h1v1h-1zM8 3h3v1h-3zM12 3h1v1h-1zM14 3h3v1h-3zM20 3h3v1h-3zM24 3h1v1h-1zM26 3h1v1h-1zM28 3h3v1h-3zM32 3h1v1h-1zM0 4h1v1h-1zM2 4h3v1h-3zM6 4h1v1h-1zM8 4h1v1h-1zM13 4h1v1h-1zM15 4h1v1h-1zM18 4h1v1h-1zM24 4h1v1h-1zM26 4h1v1h-1zM28 4h3v1h-3zM32 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM8 5h1v1h-1zM10 5h1v1h-1zM12 5h1v1h-1zM14 5h3v1h-3zM20 5h1v1h-1zM26 5h1v1h-1zM32 5h1v1h-1zM0 6h7v1h-7zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h1v1h-1zM24 6h1v1h-1zM26 6h7v1h-7zM8 7h1v1h-1zM10 7h1v1h-1zM12 7h1v1h-1zM14 7h2v1h-2zM18 7h1v1h-1zM21 7h1v1h-1zM0 8h1v1h-1zM2 8h5v1h-5zM9 8h4v1h-4zM14 8h2v1h-2zM17 8h1v1h-1zM23 8h2v1h-2zM26 8h5v1h-5zM4 9h1v1h-1zM9 9h2v1h-2zM12 9h1v1h-1zM14 9h3v1h-3zM19 9h4v1h-4zM29 9h3v1h-3zM0 10h4v1h-4zM5 10h2v1h-2zM8 10h1v1h-1zM11 10h2v1h-2zM15 10h2v1h-2zM18 10h1v1h-1zM20 10h2v1h-2zM24 10h1v1h-1zM27 10h5v1h-5zM8 11h3v1h-3zM12 11h1v1h-1zM14 11h2v1h-2zM19 11h1v1h-1zM21 11h2v1h-2zM24 11h2v1h-2zM27 11h6v1h-6zM0 12h4v1h-4zM5 12h3v1h-3zM9 12h2v1h-2zM12 12h1v1h-1zM15 12h1v1h-1zM18 12h2v1h-2zM21 12h1v1h-1zM23 12h3v1h-3zM29 12h1v1h-1zM31 12h1v1h-1zM5 13h1v1h-1zM7 13h2v1h-2zM12 13h1v1h-1zM14 13h3v1h-3zM20 13h1v1h-1zM22 13h1v1h-1zM30 13h3v1h-3zM1 14h2v1h-2zM4 14h1v1h-1zM6 14h2v1h-2zM10 14h3v1h-3zM14 14h1v1h-1zM18 14h2v1h-2zM21 14h1v1h-1zM29 14h3v1h-3zM0 15h1v1h-1zM2 15h3v1h-3zM8 15h2v1h-2zM11 15h1v1h-1zM13 15h1v1h-1zM16 15h1v1h-1zM18 15h4v1h-4zM25 15h3v1h-3zM29 15h4v1h-4zM1 16h2v1h-2zM4 16h4v1h-4zM12 16h1v1h-1zM16 16h2v1h-2zM19 16h1v1h-1zM21 16h2v1h-2zM27 16h1v1h-1zM30 16h1v1h-1zM1 17h2v1h-2zM4 17h2v1h-2zM7 17h1v1h-1zM10 17h1v1h-1zM12 17h2v1h-2zM16 17h3v1h-3zM20 17h1v1h-1zM22 17h2v1h-2zM25 17h2v1h-2zM30 17h1v1h-1zM32 17h1v1h-1zM0 18h5v1h-5zM6 18h1v1h-1zM8 18h2v1h-2zM15 18h1v1h-1zM17 18h1v1h-1zM22 18h1v1h-1zM27 18h2v1h-2zM31 18h1v1h-1zM1 19h5v1h-5zM7 19h1v1h-1zM9 19h1v1h-1zM14 19h2v1h-2zM17 19h3v1h-3zM23 19h3v1h-3zM27 19h1v1h-1zM29 19h4v1h-4zM0 20h2v1h-2zM3 20h1v1h-1zM6 20h1v1h-1zM8 20h2v1h-2zM11 20h1v1h-1zM16 20h1v1h-1zM19 20h6v1h-6zM28 20h1v1h-1zM30 20h1v1h-1zM0 21h4v1h-4zM5 21h1v1h-1zM9 21h2v1h-2zM12 21h4v1h-4zM17 21h2v1h-2zM21 21h1v1h-1zM23 21h1v1h-1zM25 21h3v1h-3zM29 21h2v1h-2zM0 22h1v1h-1zM2 22h5v1h-5zM8 22h1v1h-1zM11 22h1v1h-1zM15 22h2v1h-2zM18 22h1v1h-1zM20 22h3v1h-3zM24 22h1v1h-1zM27 22h3v1h-3zM31 22h1v1h-1zM0 23h1v1h-1zM4 23h2v1h-2zM11 23h1v1h-1zM13 23h1v1h-1zM15 23h1v1h-1zM18 23h1v1h-1zM21 23h2v1h-2zM25 23h1v1h-1zM29 23h2v1h-2zM0 24h2v1h-2zM4 24h3v1h-3zM9 24h2v1h-2zM12 24h5v1h-5zM20 24h3v1h-3zM24 24h5v1h-5zM30 24h3v1h-3zM8 25h1v1h-1zM10 25h1v1h-1zM12 25h1v1h-1zM15 25h2v1h-2zM18 25h1v1h-1zM20 25h3v1h-3zM24 25h1v1h-1zM28 25h2v1h-2zM31 25h2v1h-2zM0 26h7v1h-7zM9 26h1v1h-1zM14 26h2v1h-2zM18 26h1v1h-1zM20 26h2v1h-2zM23 26h2v1h-2zM26 26h1v1h-1zM28 26h3v1h-3zM0 27h1v1h-1zM6 27h1v1h-1zM8 27h4v1h-4zM14 27h2v1h-2zM19 27h1v1h-1zM21 27h4v1h-4zM28 27h1v1h-1zM30 27h1v1h-1zM0 28h1v1h-1zM2 28h3v1h-3zM6 28h1v1h-1zM8 28h1v1h-1zM14 28h1v1h-1zM18 28h2v1h-2zM21 28h1v1h-1zM24 28h6v1h-6zM32 28h1v1h-1zM0 29h1v1h-1zM2 29h3v1h-3zM6 29h1v1h-1zM8 29h1v1h-1zM11 29h3v1h-3zM15 29h3v1h-3zM20 29h3v1h-3zM24 29h2v1h-2zM27 29h3v1h-3zM32 29h1v1h-1zM0 30h1v1h-1zM2 30h3v1h-3zM6 30h1v1h-1zM8 30h2v1h-2zM11 30h2v1h-2zM14 30h1v1h-1zM17 30h3v1h-3zM21 30h1v1h-1zM24 30h2v1h-2zM29 30h2v1h-2zM0 31h1v1h-1zM6 31h1v1h-1zM9 31h2v1h-2zM13 31h2v1h-2zM16 31h1v1h-1zM19 31h3v1h-3zM23 31h1v1h-1zM25 31h1v1h-1zM28 31h3v1h-3zM0 32h7v1h-7zM8 32h1v1h-1zM10 32h2v1h-2zM14 32h1v1h-1zM17 32h1v1h-1zM19 32h1v1h-1zM21 32h4v1h-4zM29 32h3v1h-3z" fill="#000"/></svg></div>
+      <p class="sub">SOL · USDC · USDT on Solana</p>
+      <p class="mono" id="donation">CurM7bJC1PkxEj8UPKZKeTphKhXqFMX3gQGMV1QA4teM</p>
+      <button id="copy" style="width:100%">Copy address</button>
+    </aside>
+  </div>
+
+  <footer>Open source · MIT · <a href="https://github.com/solanavibes/shdw-unstake" target="_blank" rel="noopener" style="color:inherit">github.com/solanavibes/shdw-unstake</a> · Not affiliated with GenesysGo</footer>
+</main>
+
+<script>
+  // Session token is injected by the local server; every API call must carry it.
+  const TOKEN = "__SESSION_TOKEN__";
+  const $ = id => document.getElementById(id);
+  let current = null;     // last /api/info result
+  let pendingStep = null; // "unstake" | "withdraw" waiting for a key
+
+  async function api(path, body = {}) {
+    const r = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Session-Token": TOKEN },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`Server error ${r.status}. Restart the app from the launcher.`);
+    return r.json();
+  }
+
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const bad = s => `<span style="color:var(--bad)">${esc(s)}</span>`;
+  function log(html) {
+    $("log").innerHTML += `<br>${new Date().toLocaleTimeString()}  ${html}`;
+    $("log").scrollTop = $("log").scrollHeight;
+  }
+  const show = (id, on) => $(id).classList.toggle("hidden", !on);
+  const busy = on => ["check", "unstake", "withdraw", "sign"].forEach(id => { $(id).disabled = on; });
+  const setStatus = (text, kind = "") => { $("status").textContent = text; $("status").className = "pill " + kind; };
+
+  async function loadConfig(rpc) {
+    const c = await api("/api/config", rpc === undefined ? {} : { rpc });
+    if (c.error) throw new Error(c.error);
+    $("rpcInfo").textContent = `Using: ${c.rpc}` + (c.custom ? "" : " (public, may be rate-limited)");
+  }
+
+  async function check() {
+    const wallet = $("wallet").value.trim();
+    if (!wallet) { $("walletErr").textContent = "Enter a wallet address first."; show("walletErr", true); return; }
+    show("walletErr", false); busy(true); hideSign();
+    log(`Checking ${esc(wallet.slice(0, 6))}…${esc(wallet.slice(-4))}`);
+    try {
+      const r = await api("/api/info", { wallet });
+      if (r.error) throw new Error(r.error);
+      current = r;
+      try { localStorage.setItem("lastWallet", wallet); } catch {}
+      $("net").textContent = `Mainnet · epoch ${r.epoch}`; $("net").className = "pill ok";
+      $("inWallet").textContent = `${Number(r.shdw).toLocaleString()} SHDW`;
+      $("sol").textContent = r.sol.toFixed(4);
+      show("solWarn", r.sol < 0.001);
+
+      if (!r.stake) {
+        $("staked").textContent = "0 SHDW"; setStatus("No stake");
+        $("withdrawHint").textContent = "Nothing to withdraw";
+        log("No operator stake found for this wallet.");
+        return;
+      }
+      $("staked").textContent = `${r.stake.amount.toLocaleString()} SHDW`;
+      if (r.stake.amount === 0) {
+        setStatus("Withdrawn", "ok"); $("withdrawHint").textContent = "Nothing left to withdraw";
+      } else if (r.stake.unstakeEpoch) {
+        const ready = r.epoch > r.stake.unstakeEpoch;
+        setStatus(ready ? "Ready to withdraw" : "Cooling down", ready ? "ok" : "warn");
+        $("withdrawHint").textContent = ready
+          ? "Cooldown looks over — try Withdraw"
+          : `Unstaked in epoch ${r.stake.unstakeEpoch}. Try from epoch ${r.stake.unstakeEpoch + 1}`;
+      } else {
+        setStatus("Staked", "accent"); $("withdrawHint").textContent = "Do Step 1 first";
+      }
+      const h = r.stake.history.slice(0, 8)
+        .map(x => `${x.date} ${x.ok ? "" : "(failed) "}${esc(x.names.join(", "))}`).join("<br>");
+      log(`Stake: ${r.stake.amount.toLocaleString()} SHDW${h ? "<br>" + h : ""}`);
+    } catch (e) { log(bad(e.message)); }
+    finally { busy(false); }
+  }
+
+  // Always simulate first; only a passing simulation opens the key box.
+  async function prepare(step) {
+    if (!current || current.wallet !== $("wallet").value.trim()) await check();
+    if (!current?.stake) return;
+    busy(true); hideSign();
+    const name = step === "unstake" ? "Unstake" : "Withdraw";
+    log(`Simulating ${name}…`);
+    try {
+      const r = await api("/api/simulate", { wallet: current.wallet, step });
+      if (!r.ok) {
+        log(bad(`${name} is not possible right now: ${r.error}`));
+        if (step === "withdraw") log("If you unstaked recently, the cooldown is still running. Try again tomorrow.");
+        if (step === "unstake") log("If you already unstaked, use Step 2 (Withdraw).");
+        return;
+      }
+      log("Simulation passed ✔");
+      pendingStep = step;
+      $("signMsg").textContent = `${name} will work. Paste the private key of this wallet to sign and send it.`;
+      show("signBox", true); $("key").value = ""; $("key").focus();
+    } catch (e) { log(bad(e.message)); }
+    finally { busy(false); }
+  }
+
+  function hideSign() { show("signBox", false); show("keyErr", false); $("key").value = ""; pendingStep = null; }
+
+  async function signAndSend() {
+    const key = $("key").value.trim();
+    if (!key) { $("keyErr").textContent = "Paste the private key first."; show("keyErr", true); return; }
+    const step = pendingStep;
+    busy(true); show("keyErr", false);
+    log("Signing and sending…");
+    try {
+      const r = await api("/api/send", { wallet: current.wallet, step, key });
+      $("key").value = "";
+      if (!r.ok) { $("keyErr").textContent = r.error; show("keyErr", true); log(bad(r.error)); return; }
+      hideSign();
+      log(`Confirmed ✔ <a href="https://solscan.io/tx/${esc(r.signature)}" target="_blank" rel="noopener">view on Solscan</a>`);
+      log(step === "unstake"
+        ? "Step 1 done. Come back in 2–3 days and press Withdraw."
+        : `Done! SHDW in wallet: ${esc(r.shdw ?? "?")}`);
+      await check();
+    } catch (e) { log(bad(e.message)); }
+    finally { busy(false); }
+  }
+
+  $("check").onclick = check;
+  $("wallet").onkeydown = e => { if (e.key === "Enter") check(); };
+  $("wallet").oninput = () => show("walletErr", false);
+  $("unstake").onclick = () => prepare("unstake");
+  $("withdraw").onclick = () => prepare("withdraw");
+  $("sign").onclick = signAndSend;
+  $("key").onkeydown = e => { if (e.key === "Enter") signAndSend(); };
+  $("key").oninput = () => show("keyErr", false);
+  $("cancel").onclick = () => { hideSign(); log("Canceled. Nothing was sent."); };
+  $("saveRpc").onclick = async () => {
+    try { await loadConfig($("rpc").value.trim()); $("rpc").value = ""; log("RPC saved."); }
+    catch (e) { log(bad(e.message)); }
+  };
+  $("copy").onclick = async () => {
+    try { await navigator.clipboard.writeText($("donation").textContent); $("copy").textContent = "Copied"; }
+    catch { $("copy").textContent = "Select and copy manually"; }
+    setTimeout(() => { $("copy").textContent = "Copy address"; }, 2000);
+  };
+  $("quit").onclick = async () => {
+    try { await api("/api/quit"); } catch {}
+    document.body.innerHTML = '<main><h1>SHDW Unstake stopped</h1><p class="sub">You can close this tab.</p></main>';
+  };
+
+  try { $("wallet").value = localStorage.getItem("lastWallet") || ""; } catch {}
+  loadConfig().catch(e => log(bad(e.message)));
+</script>
+</body>
+</html>
