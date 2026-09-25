@@ -17,7 +17,7 @@ fi
 
 if [ ! -f "node_modules/@solana/web3.js/package.json" ]; then
   echo "First run: installing components, this takes 1-2 minutes..."
-  if ! npm install --no-audit --no-fund --loglevel=error; then
+  if ! npm install --omit=dev --no-audit --no-fund --loglevel=error; then
     echo "Could not install components. Check your internet connection and try again."
     read -r -p "Press Enter to close..."
     exit 1

@@ -54,6 +54,8 @@
   details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   .hidden { display: none !important; }
   footer { text-align: center; font-size: 12px; color: var(--faint); margin-top: 16px; }
+  .notice { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--accent-bg); color: var(--accent); border-radius: 12px; padding: 10px 16px; margin-bottom: 14px; font-size: 13px; }
+  .notice a { color: var(--accent); font-weight: 600; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -68,6 +70,11 @@
       <button id="quit" title="Stop the app">Quit</button>
     </div>
   </header>
+
+  <section class="notice">
+    <span><strong>Open source.</strong> Don't trust — verify: the full code of this app is public, so you or anyone you trust can review it before you paste a key.</span>
+    <a href="https://github.com/solanavibes/shdw-unstake" target="_blank" rel="noopener">Review the code on GitHub →</a>
+  </section>
 
   <div class="grid">
     <div class="col">
@@ -115,7 +122,7 @@
             <button id="cancel">Cancel</button>
           </div>
           <p id="keyErr" class="err hidden"></p>
-          <p class="hint">The key is used only in memory on this computer to sign this one transaction. It is never saved.</p>
+          <p class="hint">The key is used only in memory on this computer to sign this one transaction. It is never saved or sent anywhere. <a href="https://github.com/solanavibes/shdw-unstake/blob/main/src/stake.mjs" target="_blank" rel="noopener" style="color:inherit">See exactly how it's used</a>.</p>
         </div>
       </section>
 
@@ -144,7 +151,7 @@
     </aside>
   </div>
 
-  <footer>Open source · MIT · <a href="https://github.com/solanavibes/shdw-unstake" target="_blank" rel="noopener" style="color:inherit">github.com/solanavibes/shdw-unstake</a> · Not affiliated with GenesysGo</footer>
+  <footer><span id="ver">SHDW Unstake</span> · MIT · <a href="https://github.com/solanavibes/shdw-unstake" target="_blank" rel="noopener" style="color:inherit">github.com/solanavibes/shdw-unstake</a> · <a href="https://github.com/solanavibes/shdw-unstake/releases" target="_blank" rel="noopener" style="color:inherit">Releases</a> · Not affiliated with GenesysGo</footer>
 </main>
 
 <script>
@@ -178,6 +185,7 @@
     const c = await api("/api/config", rpc === undefined ? {} : { rpc });
     if (c.error) throw new Error(c.error);
     $("rpcInfo").textContent = `Using: ${c.rpc}` + (c.custom ? "" : " (public, may be rate-limited)");
+    $("ver").textContent = `SHDW Unstake v${c.version} · web3.js ${c.lib}`;
   }
 
   async function check() {

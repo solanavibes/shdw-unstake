@@ -14,9 +14,14 @@
     "node": ">=18"
   },
   "scripts": {
-    "start": "node src/server.mjs"
+    "start": "node src/server.mjs",
+    "bundle": "node scripts/bundle.mjs"
   },
   "dependencies": {
     "@solana/web3.js": ">=1.95.8 <2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "postject": "1.0.0-alpha.6"
   }
 }

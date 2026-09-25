@@ -9,7 +9,7 @@ if errorlevel 1 goto nonode
 
 if exist "node_modules\@solana\web3.js\package.json" goto run
 echo First run: installing components, this takes 1-2 minutes...
-call npm install --no-audit --no-fund --loglevel=error
+call npm install --omit=dev --no-audit --no-fund --loglevel=error
 if errorlevel 1 goto npmfail
 
 :run
